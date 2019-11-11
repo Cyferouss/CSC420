@@ -12,7 +12,6 @@ for i in getImageFromVideo("C:/Users/skunk/Downloads/FMSD26.mov"):
     cv2.imshow("image", i)
     cv2.waitKey(0)
 '''
-
 # gray scale?
 def placeImage(coords, big, nose):
     # Need to  make sure it doesn't go out of bounds.
