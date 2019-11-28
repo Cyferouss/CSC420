@@ -68,7 +68,14 @@ img1 = cv2.imread("C:/Users/skunk/Desktop/49897907_271940710169544_3078130647894
 img2 = cv2.imread("C:/Users/skunk/Desktop/images.png")
 flower = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flower.png")
 
+#augmentedScene = augmentFlowers(img1)
+#cv2.imshow("", augmentedScene)
 # General Flow
-augmentedScene = augmentFlowers(img1)
-cv2.imshow("", augmentedScene)
-cv2.waitKey(delay=20000)
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter("C:/Users/skunk/Desktop/csc420proj/CSC420/output.avi", fourcc, 20, (640, 480))
+for i in getImageFromVideo("C:/Users/skunk/Downloads/FMSD26.mov"):
+    #cv2.imshow("", i)
+    #cv2.waitKey(delay=20)
+    out.write(i)
+out.release()
+
