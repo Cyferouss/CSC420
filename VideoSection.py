@@ -9,7 +9,8 @@ def getImageFromVideo(path):
         success, image = vidcap.read()
 
 # Gray scale?
-def placeImage(coords, scene, img, scale=.1, debug=True):
+# FaceCoords is format ((x1,y1), (x2,y2))
+def placeImage(coords, scene, img, scale=.1, debug=True, FaceCoords=None):
     # Need to  make sure it doesn't go out of bounds.
     x1, y1 = coords
     img3 = scene.copy()
@@ -21,16 +22,23 @@ def placeImage(coords, scene, img, scale=.1, debug=True):
         for j in range(-yCenter, yCenter):
             # Too lazy to write bound check for potential index out of bounds so i'll use this hack.
             try:
-                x = img[j + yCenter, i + xCenter][0]
-                y = img[j + yCenter, i + xCenter][1]
-                z = img[j + yCenter, i + xCenter][2]
-                if x != 0 or y != 0 or z != 0:
-                    img3[j + y1, i + x1] = img[j + yCenter, i + xCenter]
+                r = img[j + yCenter, i + xCenter][0]
+                g = img[j + yCenter, i + xCenter][1]
+                b = img[j + yCenter, i + xCenter][2]
+                inABox = False
+                if r != 0 or g != 0 or b != 0:
+                    for f in FaceCoords:
+                        if (not f or \
+                        ((f[0][0] < j + y1 and f[1][0] > j + y1) and\
+                        (f[0][1] < i + x1 and f[1][1] > i + x1))):
+                            inABox = True
+                    if not inABox:
+                        img3[j + y1, i + x1] = img[j + yCenter, i + xCenter]
             except:
                 pass
     return img3
 
-def augmentFlowers(scene, numFlowers=20, minDistance=50, debug=False):
+def augmentFlowers(scene, numFlowers=50, minDistance=50, debug=False, FaceCoords=None):
     orb = cv2.ORB_create()
     kp1, desc1 = orb.detectAndCompute(scene, None)
     if (len(kp1) == 0):
@@ -64,7 +72,7 @@ def augmentFlowers(scene, numFlowers=20, minDistance=50, debug=False):
         x, y = int(usedKp1[i].pt[0]), int(usedKp1[i].pt[1])
 
         # TODO: Not sure if it's suppose to be (y, x) or (x, y)
-        augmentedScene = placeImage((y, x), augmentedScene, flower)
+        augmentedScene = placeImage((y, x), augmentedScene, flower, FaceCoords=FaceCoords)
     return augmentedScene
 
 # Test placeImage
@@ -95,11 +103,15 @@ while(True):
 
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = cv2.equalizeHist(frame_gray)
-    print(frame.shape)
     #-- Detect faces
     faces = face_cascade.detectMultiScale(frame_gray)
+    remapped = []
     for (x,y,w,h) in faces:
-        cv2.rectangle(frame, (x,y), (x+w,y+h),(255,0,0), 3)
+        remapped.append(((x, y), (x + w, y+ h)))
+
+    for (x,y,w,h) in faces:
+        cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
+    frame = augmentFlowers(frame, FaceCoords=remapped)
     cv2.imshow('frame',frame)
     cv2.waitKey(delay=60)
 
