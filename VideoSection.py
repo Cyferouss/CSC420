@@ -103,7 +103,7 @@ flower = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flower.png")
 # General Flow
 testing = False
 fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-out = cv2.VideoWriter("C:/Users/skunk/Desktop/csc420proj/CSC420/output.avi", fourcc, 30, (400, 300), True)
+out = cv2.VideoWriter("C:/Users/skunk/Desktop/csc420proj/CSC420/output.avi", fourcc, 10, (640, 480), True)
 
 if testing:
     for frame in getImageFromVideo("C:/Users/skunk/Desktop/csc420proj/CSC420/TestVideo.mp4"):
@@ -119,6 +119,7 @@ cap = cv2.VideoCapture(0)
 #for frame in getImageFromVideo("C:/Users/skunk/Desktop/csc420proj/CSC420/TestVideo.mp4"):
 while(True):
     ret, frame = cap.read()
+    print(frame.shape)
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = cv2.equalizeHist(frame_gray)
     #-- Detect faces
@@ -133,5 +134,8 @@ while(True):
     cv2.imshow("",frame)
     cv2.waitKey(delay=1)
     out.write(frame)
+    if cv2.waitKey(33) == ord('a'):
+        break
+
 
 out.release()
