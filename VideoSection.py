@@ -4,6 +4,7 @@ import random
 import os
 import sys
 
+# Particle System Global var.
 keyPoints = []
 
 def getImageFromVideo(path):
@@ -30,6 +31,7 @@ def placeImage(coords, scene, img, scale=.5, debug=True, FaceCoords=None):
                 b = img[j + yCenter, i + xCenter][2]
                 inABox = False
                 if r != 0 or g != 0 or b != 0:
+                    # Flowers should not be drawn on faces.
                     for f in FaceCoords:
                         if (not f or \
                         ((f[0][0] <= i + x1 and f[1][0] >= i + x1) and\
@@ -52,8 +54,10 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
         img2 = cv2.drawKeypoints(scene, kp1, None, color=(255,0,0))
         cv2.imshow("", img2)
         cv2.waitKey(delay=20000)
+    
     global keyPoints
     usedKp1 = keyPoints
+    # If all flowers have been removed from particle system make new ones.
     if len(usedKp1) == 0:
         usedKp1 = [[kp1[0], random.uniform(.1,.2), random.randint(0,2)]]
         for i in range(1, len(kp1)):
@@ -72,26 +76,25 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
             if usable:
                 usedKp1.append([kp1[i], random.uniform(0.1,.2), random.randint(0,2)])
         keyPoints = usedKp1
-    
 
     augmentedScene = scene.copy()
-    
     delList = []
+    # Place flowers
     for i in range(0, min(numFlowers, len(usedKp1))):
         x, y = int(usedKp1[i][0].pt[0]), int(usedKp1[i][0].pt[1])
         scale = usedKp1[i][1]
         keyPoints[i][1] *= 1.05
         if keyPoints[i][1] > .4:
-            delList.append(i)
-        # TODO: Not sure if it's suppose to be (y, x) or (x, y)
-        
+            delList.append(i)        
         augmentedScene = placeImage((y, x), augmentedScene, usedFlower[keyPoints[i][2]], FaceCoords=FaceCoords, scale=scale)
     tmp = []
+    # Remove large flowers.
     for i in range(0, len(keyPoints)):
         if i not in delList:
             tmp.append(keyPoints[i])
     keyPoints = tmp
     return augmentedScene
+
 
 ###### LOAD RESOURCES ######
 ### IMAGE LOCATIONS ###
@@ -109,6 +112,8 @@ OUTPUT_LOCATION = ""
 webCamMode = False
 face_cascade = cv2.CascadeClassifier("C:\\opencv\\build\\etc\\haarcascades\\haarcascade_frontalface_default.xml")
 ###### END LOAD RESOURCES ######
+
+### DRIVER CODE ###
 
 if len(sys.argv) > 1:
     INPUT_VIDEO = sys.argv[1]
@@ -145,7 +150,7 @@ else:
 
     while(True):
         ret, frame = cap.read()
-        if frame == None:
+        if frame is None:
             print("WEBCAM RETURNED NONE CHECK WEBCAM")
         # Tint blue
         frame[:,:,0] = 120
