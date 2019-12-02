@@ -94,54 +94,67 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
     keyPoints = tmp
     return augmentedScene
 
-# Test placeImage
+### IMAGE LOCATIONS ###
 img1 = cv2.imread("C:/Users/skunk/Desktop/49897907_271940710169544_307813064789458944_n.png")
 img2 = cv2.imread("C:/Users/skunk/Desktop/images.png")
 flower = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flower.png")
 flowerGreen = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flowerGreen.png")
 flowerRed = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flowerRed.png")
 
+### GLOBAL VARIABLES ###
 usedFlower = [flower, flowerGreen, flowerRed]
-#augmentedScene = augmentFlowers(img1)
-#cv2.imshow("", augmentedScene)
-# General Flow
-testing = False
-fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-out = cv2.VideoWriter("C:/Users/skunk/Desktop/csc420proj/CSC420/output.avi", fourcc, 10, (640, 480), True)
-
-if testing:
-    for frame in getImageFromVideo("C:/Users/skunk/Desktop/csc420proj/CSC420/TestVideo.mp4"):
-        augmentedScene = augmentFlowers(frame)
-        out.write(augmentedScene)
-    out.release()
-
+INPUT_VIDEO = "C:/Users/skunk/Desktop/csc420proj/CSC420/TestVideo.mp4"
+OUTPUT_LOCATION = "C:/Users/skunk/Desktop/csc420proj/CSC420/output.avi"
+webCamMode = True
 face_cascade = cv2.CascadeClassifier("C:\\opencv\\build\\etc\\haarcascades\\haarcascade_frontalface_default.xml")
-count = 0
 
-cap = cv2.VideoCapture(0)
+if not webCamMode:
+    tmp = next(getImageFromVideo(INPUT_VIDEO))
+    width = tmp.shape[1]
+    height = tmp.shape[0]
 
-#for frame in getImageFromVideo("C:/Users/skunk/Desktop/csc420proj/CSC420/TestVideo.mp4"):
-while(True):
-    ret, frame = cap.read()
-    # Tint blue
-    frame[:,:,0] *= 3
+    fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
+    out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 30, (width, height), True)
 
-    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    frame_gray = cv2.equalizeHist(frame_gray)
-    #-- Detect faces
-    faces = face_cascade.detectMultiScale(frame_gray)
-    remapped = []
-    for (x,y,w,h) in faces:
-        remapped.append(((x, y), (x + w, y+ h)))
+    for frame in getImageFromVideo(INPUT_VIDEO):
+        # Tint blue
+        # frame[:,:,0] *= 2
 
-    for (x,y,w,h) in faces:
-        cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
-    frame = augmentFlowers(frame, FaceCoords=remapped)
-    cv2.imshow("",frame)
-    cv2.waitKey(delay=1)
-    out.write(frame)
-    if cv2.waitKey(33) == ord('a'):
-        break
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_gray = cv2.equalizeHist(frame_gray)
+        #-- Detect faces
+        faces = face_cascade.detectMultiScale(frame_gray)
+        remapped = []
+        for (x,y,w,h) in faces:
+            remapped.append(((x, y), (x + w, y+ h)))
+
+        for (x,y,w,h) in faces:
+            cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
+        frame = augmentFlowers(frame, FaceCoords=remapped)
+        out.write(frame)
+    out.release()
+else:
+    cap = cv2.VideoCapture(0)
+
+    while(True):
+        ret, frame = cap.read()
+        # Tint blue
+        # frame[:,:,0] *= 3
+
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_gray = cv2.equalizeHist(frame_gray)
+        #-- Detect faces
+        faces = face_cascade.detectMultiScale(frame_gray)
+        remapped = []
+        for (x,y,w,h) in faces:
+            remapped.append(((x, y), (x + w, y+ h)))
+
+        for (x,y,w,h) in faces:
+            cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
+        frame = augmentFlowers(frame, FaceCoords=remapped)
+        cv2.imshow("",frame)
+        cv2.waitKey(delay=1)
+        if cv2.waitKey(1) == ord('a'):
+            break
 
 
-out.release()
