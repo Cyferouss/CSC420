@@ -55,10 +55,10 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
     global keyPoints
     usedKp1 = keyPoints
     if len(usedKp1) == 0:
-        usedKp1 = [[kp1[0], random.uniform(.1,.2)]]
+        usedKp1 = [[kp1[0], random.uniform(.1,.2), random.randint(0,2)]]
         for i in range(1, len(kp1)):
             usable = True
-            for kp, _ in usedKp1:
+            for kp, _, _ in usedKp1:
                 usedKpX = kp.pt[0]
                 usedKpY = kp.pt[1]
                 
@@ -71,7 +71,7 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
                     break
 
             if usable:
-                usedKp1.append([kp1[i], random.uniform(0.1,.2)])
+                usedKp1.append([kp1[i], random.uniform(0.1,.2), random.randint(0,2)])
         keyPoints = usedKp1
     
 
@@ -85,7 +85,8 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
         if keyPoints[i][1] > .4:
             delList.append(i)
         # TODO: Not sure if it's suppose to be (y, x) or (x, y)
-        augmentedScene = placeImage((y, x), augmentedScene, flower, FaceCoords=FaceCoords, scale=scale)
+        
+        augmentedScene = placeImage((y, x), augmentedScene, usedFlower[keyPoints[i][2]], FaceCoords=FaceCoords, scale=scale)
     tmp = []
     for i in range(0, len(keyPoints)):
         if i not in delList:
@@ -97,7 +98,10 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
 img1 = cv2.imread("C:/Users/skunk/Desktop/49897907_271940710169544_307813064789458944_n.png")
 img2 = cv2.imread("C:/Users/skunk/Desktop/images.png")
 flower = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flower.png")
+flowerGreen = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flowerGreen.png")
+flowerRed = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flowerRed.png")
 
+usedFlower = [flower, flowerGreen, flowerRed]
 #augmentedScene = augmentFlowers(img1)
 #cv2.imshow("", augmentedScene)
 # General Flow
@@ -119,7 +123,9 @@ cap = cv2.VideoCapture(0)
 #for frame in getImageFromVideo("C:/Users/skunk/Desktop/csc420proj/CSC420/TestVideo.mp4"):
 while(True):
     ret, frame = cap.read()
-    print(frame.shape)
+    # Tint blue
+    frame[:,:,0] *= 3
+
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frame_gray = cv2.equalizeHist(frame_gray)
     #-- Detect faces
