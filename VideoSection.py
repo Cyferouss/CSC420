@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import random
+import os
+import sys
 
 keyPoints = []
 
@@ -11,10 +13,8 @@ def getImageFromVideo(path):
         yield image      
         success, image = vidcap.read()
 
-# Gray scale?
 # FaceCoords is format ((x1,y1), (x2,y2))
 def placeImage(coords, scene, img, scale=.5, debug=True, FaceCoords=None):
-    # Need to  make sure it doesn't go out of bounds.
     x1, y1 = coords
     img3 = scene.copy()
 
@@ -69,7 +69,6 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
                 if dist < minDistance:
                     usable = False
                     break
-
             if usable:
                 usedKp1.append([kp1[i], random.uniform(0.1,.2), random.randint(0,2)])
         keyPoints = usedKp1
@@ -94,19 +93,27 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
     keyPoints = tmp
     return augmentedScene
 
+###### LOAD RESOURCES ######
 ### IMAGE LOCATIONS ###
-img1 = cv2.imread("C:/Users/skunk/Desktop/49897907_271940710169544_307813064789458944_n.png")
-img2 = cv2.imread("C:/Users/skunk/Desktop/images.png")
-flower = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flower.png")
-flowerGreen = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flowerGreen.png")
-flowerRed = cv2.imread("C:/Users/skunk/Desktop/csc420proj/CSC420/flowerRed.png")
+flower = cv2.imread(os.path.join(os.getcwd(), "CSC420/flower.png"))
+flowerGreen = cv2.imread(os.path.join(os.getcwd(), "CSC420/flowerGreen.png"))
+flowerRed = cv2.imread(os.path.join(os.getcwd(), "CSC420/flowerRed.png"))
+
+if flower is None or flowerGreen is None or flowerRed is None:
+    print("Failed to load a flower resource!!")
 
 ### GLOBAL VARIABLES ###
 usedFlower = [flower, flowerGreen, flowerRed]
-INPUT_VIDEO = "C:/Users/skunk/Desktop/csc420proj/CSC420/TestVideo.mp4"
-OUTPUT_LOCATION = "C:/Users/skunk/Desktop/csc420proj/CSC420/output.avi"
-webCamMode = True
+INPUT_VIDEO = ""
+OUTPUT_LOCATION = ""
+webCamMode = False
 face_cascade = cv2.CascadeClassifier("C:\\opencv\\build\\etc\\haarcascades\\haarcascade_frontalface_default.xml")
+###### END LOAD RESOURCES ######
+
+if len(sys.argv) > 1:
+    INPUT_VIDEO = sys.argv[1]
+    OUTPUT_LOCATION = sys.argv[2]
+    webCamMode = "true" == sys.argv[3].lower()
 
 if not webCamMode:
     tmp = next(getImageFromVideo(INPUT_VIDEO))
@@ -117,8 +124,8 @@ if not webCamMode:
     out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 30, (width, height), True)
 
     for frame in getImageFromVideo(INPUT_VIDEO):
-        # Tint blue
-        # frame[:,:,0] *= 2
+        # Tint blue it's underwater
+        frame[:,:,0] = 180
 
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame_gray = cv2.equalizeHist(frame_gray)
@@ -138,8 +145,10 @@ else:
 
     while(True):
         ret, frame = cap.read()
+        if frame == None:
+            print("WEBCAM RETURNED NONE CHECK WEBCAM")
         # Tint blue
-        # frame[:,:,0] *= 3
+        frame[:,:,0] = 120
 
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame_gray = cv2.equalizeHist(frame_gray)
