@@ -99,19 +99,22 @@ def augmentFlowers(scene, numFlowers=5, minDistance=100, debug=False, FaceCoords
 
 ###### LOAD RESOURCES ######
 ### IMAGE LOCATIONS ###
-flower = cv2.imread(os.path.join(os.getcwd(), "CSC420/flower.png"))
-flowerGreen = cv2.imread(os.path.join(os.getcwd(), "CSC420/flowerGreen.png"))
-flowerRed = cv2.imread(os.path.join(os.getcwd(), "CSC420/flowerRed.png"))
+flower = cv2.imread(os.path.join(os.getcwd(), "flower.png"))
+flowerGreen = cv2.imread(os.path.join(os.getcwd(), "flowerGreen.png"))
+flowerRed = cv2.imread(os.path.join(os.getcwd(), "flowerRed.png"))
 
 if flower is None or flowerGreen is None or flowerRed is None:
     print("Failed to load a flower resource!!")
-
 ### GLOBAL VARIABLES ###
 usedFlower = [flower, flowerGreen, flowerRed]
 INPUT_VIDEO = ""
 OUTPUT_LOCATION = ""
 webCamMode = False
 face_cascade = cv2.CascadeClassifier("C:\\opencv\\build\\etc\\haarcascades\\haarcascade_frontalface_default.xml")
+
+SquidNet = SquidVision.sourced_cnn()
+SquidNet.load_weights(os.path.join(os.getcwd(), "squidnet_weights.h5"))
+
 ###### END LOAD RESOURCES ######
 
 ### DRIVER CODE ###
@@ -127,7 +130,7 @@ if not webCamMode:
     height = tmp.shape[0]
 
     fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-    out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 30, (width, height), True)
+    out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 60, (width, height), True)
 
     for frame in getImageFromVideo(INPUT_VIDEO):
         # Tint blue it's underwater
@@ -142,12 +145,34 @@ if not webCamMode:
             remapped.append(((x, y), (x + w, y+ h)))
 
         for (x,y,w,h) in faces:
-            cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
+            #Segmented Slice
+            segmented_face = frame[y:y+h, x:x+w, :]
+
+            #Preprocess Slice for CNN
+            processed_segment = SquidVision.process_frame(segmented_face)
+            #Predict coordinates from CNN
+            predicted_points = SquidNet.predict(processed_segment)
+            #Scale Datapoints to original size
+            scaled_data_points = SquidVision.scale_coordinates(predicted_points, (96,96), (np.size(segmented_face, 0), np.size(segmented_face, 1)))
+            
+            #Instantiate nose path
+            nose_path = os.path.join(os.getcwd(), "SquidNose.png")
+            # Augment Face
+            augmented_face = SquidVision.draw_nose(segmented_face, scaled_data_points[0], rgb=True)
+            #Replace Frame
+            if np.shape(frame[y:y+h, x:x+w, :]) == np.shape(augmented_face):
+                frame[y:y+h, x:x+w, :] = augmented_face
+            else:
+                print("I can't believe you done this.")
+
         frame = augmentFlowers(frame, FaceCoords=remapped)
         out.write(frame)
     out.release()
 else:
     cap = cv2.VideoCapture(0)
+
+    fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
+    out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 30, (width, height), True)
 
     while(True):
         ret, frame = cap.read()
@@ -162,47 +187,39 @@ else:
         faces = face_cascade.detectMultiScale(frame_gray)
         
         #Load CNN and Weights
-        SquidNet = SquidVision.sourced_cnn()
-        SquidNet.load(os.path.join(os.getcwd(), "CSC420/squidnet_weights.h5"))
         
         remapped = []
         for (x,y,w,h) in faces:
             remapped.append(((x, y), (x + w, y+ h)))
 
-        for (x,y,w,h) in faces:
-            #cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
-
-            # THIS PORTION IS THE FACE!
-            #cv2.imshow("", frame[y:y+h, x:x+w, :])
-            
+        for (x,y,w,h) in faces:            
             #Segmented Slice
             segmented_face = frame[y:y+h, x:x+w, :]
+
             #Preprocess Slice for CNN
             processed_segment = SquidVision.process_frame(segmented_face)
             #Predict coordinates from CNN
             predicted_points = SquidNet.predict(processed_segment)
-            
             #Scale Datapoints to original size
             scaled_data_points = SquidVision.scale_coordinates(predicted_points, (96,96), (np.size(segmented_face, 0), np.size(segmented_face, 1)))
             
             #Instantiate nose path
-            nose_path = os.path.join(os.getcwd(), "CSC420/SquidNose.png")
+            nose_path = os.path.join(os.getcwd(), "SquidNose.png")
             
-            #Augment Face
-            augmented_face = SquidVision.draw_nose(segmented_face, scaled_data_points, rgb=True)
+            # Augment Face
+            augmented_face = SquidVision.draw_nose(segmented_face, scaled_data_points[0], rgb=True)
 
             #Replace Frame
             if np.shape(frame[y:y+h, x:x+w, :]) == np.shape(augmented_face):
                 frame[y:y+h, x:x+w, :] = augmented_face
             else:
                 print("I can't believe you done this.")
-            
-            # ADD NOSE
-            cv2.waitKey(delay=1)
 
-        #frame = augmentFlowers(frame, FaceCoords=remapped)
-        #cv2.imshow("",frame)
-        #cv2.waitKey(delay=1)
+        frame = augmentFlowers(frame, FaceCoords=remapped)
+        out.write(frame)
+        cv2.imshow("",frame)
+        cv2.waitKey(delay=1)
         if cv2.waitKey(1) == ord('a'):
             break
+    out.release()
 
