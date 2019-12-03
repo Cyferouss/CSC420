@@ -3,6 +3,7 @@ import numpy as np
 import random
 import os
 import sys
+import SquidVision
 
 # Particle System Global var.
 keyPoints = []
@@ -159,6 +160,11 @@ else:
         frame_gray = cv2.equalizeHist(frame_gray)
         #-- Detect faces
         faces = face_cascade.detectMultiScale(frame_gray)
+        
+        #Load CNN and Weights
+        SquidNet = SquidVision.sourced_cnn()
+        SquidNet.load(os.path.join(os.getcwd(), "CSC420/squidnet_weights.h5"))
+        
         remapped = []
         for (x,y,w,h) in faces:
             remapped.append(((x, y), (x + w, y+ h)))
@@ -167,7 +173,31 @@ else:
             #cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
 
             # THIS PORTION IS THE FACE!
-            cv2.imshow("", frame[y:y+h, x:x+w, :])
+            #cv2.imshow("", frame[y:y+h, x:x+w, :])
+            
+            #Segmented Slice
+            segmented_face = frame[y:y+h, x:x+w, :]
+            #Preprocess Slice for CNN
+            processed_segment = SquidVision.process_frame(segmented_face)
+            #Predict coordinates from CNN
+            predicted_points = SquidNet.predict(processed_segment)
+            
+            #Scale Datapoints to original size
+            scaled_data_points = SquidVision.scale_coordinates(predicted_points, (96,96), (np.size(segmented_face, 0), np.size(segmented_face, 1)))
+            
+            #Instantiate nose path
+            nose_path = os.path.join(os.getcwd(), "CSC420/SquidNose.png")
+            
+            #Augment Face
+            augmented_face = SquidVision.draw_nose(segmented_face, scaled_data_points, rgb=True)
+
+            #Replace Frame
+            if np.shape(frame[y:y+h, x:x+w, :]) == np.shape(augmented_face):
+                frame[y:y+h, x:x+w, :] = augmented_face
+            else:
+                print("I can't believe you done this.")
+            
+            # ADD NOSE
             cv2.waitKey(delay=1)
 
         #frame = augmentFlowers(frame, FaceCoords=remapped)
@@ -175,5 +205,4 @@ else:
         #cv2.waitKey(delay=1)
         if cv2.waitKey(1) == ord('a'):
             break
-
 
