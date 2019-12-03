@@ -8,7 +8,7 @@ from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Activation, Convolution2D, MaxPooling2D, BatchNormalization, Flatten, Dense, Dropout, GlobalAveragePooling2D, Conv2D,MaxPool2D, ZeroPadding2D, LeakyReLU
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.optimizers import Adam, SGD
-from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
 from tensorflow.keras import backend as kr
 from sklearn.model_selection import train_test_split
 
@@ -32,7 +32,6 @@ def plot_results(images, coordinates, image_size=96):
             index = random.randint(0, len(images) - 1)
             image = np.reshape(images[index], (96,96))
             landmark_x, landmark_y = coordinate_sets[index][0], coordinate_sets[index][1]
-            print(np.shape(image))
             ax[row, col].imshow(image, cmap="gray")
             ax[row, col].scatter(landmark_x, landmark_y, c = 'r')
             ax[row, col].set_xticks(())
@@ -64,7 +63,8 @@ def process_frame(image):
     return np.array(image_set)
 
 def sourced_cnn():
-    #sourced from paper that we referred to
+    #Inspired from the paper by Shutong Zhang, Chenyue Meng of Stanford University
+    #http://cs231n.stanford.edu/reports/2016/pdfs/007_Report.pdf
     model = Sequential()
     
     model.add(Convolution2D(64, (3,3), padding='valid', use_bias=False, input_shape=(96,96,1)))
@@ -86,8 +86,8 @@ def sourced_cnn():
     model.add(MaxPool2D(pool_size=(2, 2)))
      
     model.add(Flatten())
-    model.add(Dense(500,activation='relu', kernel_regularizer=regularizers.l2(0.003)))
-    model.add(Dense(500,activation='relu', kernel_regularizer=regularizers.l2(0.001)))
+    model.add(Dense(500,activation='relu', kernel_regularizer=regularizers.l2(0.002)))
+    model.add(Dense(500,activation='relu', kernel_regularizer=regularizers.l2(0.002)))
 
     model.add(Dense(8, activation='sigmoid'))
     
@@ -201,7 +201,6 @@ def homographical_augment(image_set, truth_set):
             augmented_images.append(np.expand_dims(augmented_image, axis=-1))
 
         #Flip augmentation
-
         flip = random.choice([0,1,-1])
         flipped_image = cv2.flip(reshaped_img, flip)
         flipped_t_matrix = cv2.flip(t_matrix, flip)
@@ -339,7 +338,6 @@ def draw_nose(image, coordinate_set, nose_path="SquidNose.png", rgb=False):
     nose_box_by = coordinates[3][1]
     
     #Rectangle BB around Nose
-    
     bb_coordinates = np.array([
             [nose_box_lx, nose_box_ty],
             [nose_box_rx, nose_box_ty],
@@ -347,17 +345,11 @@ def draw_nose(image, coordinate_set, nose_path="SquidNose.png", rgb=False):
             [nose_box_rx, nose_box_by]
             ])
     
-#    print(coordinates)
-#    print(bb_coordinates)
-#    print(nose_pts)
-    
     h, res = cv2.findHomography(nose_pts, bb_coordinates)
-#    print(h)
     
     if rgb == False:
         warped_nose = cv2.warpPerspective(gray_nose, h, (np.size(image,0), np.size(image,1)))
-#        print(np.shape(image))
-#        print(np.shape(warped_nose))
+
         augmented_image = image.copy()
         
         for y in range(np.size(image, 0) - 15):
@@ -373,13 +365,6 @@ def draw_nose(image, coordinate_set, nose_path="SquidNose.png", rgb=False):
         warped_nose_g = cv2.warpPerspective(nose_g, h, (np.size(image,0), np.size(image,1)))
         warped_nose_r = cv2.warpPerspective(nose_r, h, (np.size(image,0), np.size(image,1)))
         
-#        print(np.shape(warped_nose_b))
-#        print(np.shape(warped_nose_g))
-#        print(np.shape(warped_nose_r))
-#        
-#        print(np.shape(img_b))
-#        print(np.shape(img_g))
-#        print(np.shape(img_r))
         for y in range(np.size(image, 0)):
             for x in range(np.size(image,1)):
                 nose_pixel_b = warped_nose_b[y][x]
@@ -394,51 +379,44 @@ def draw_nose(image, coordinate_set, nose_path="SquidNose.png", rgb=False):
         
     return augmented_image
 if __name__ == "__main__":
-#    Built with the help of https://www.kaggle.com/soumikrakshit/eye-detection-using-facial-landmks
+#    Built with the Kaggle facial landmark detection competition dataset: 
+#    https://www.kaggle.com/drgilermo/face-images-with-marked-landmark-points
 #    Load Dataset and CSV
-#    face_images = np.moveaxis(np.load('face_images.npz')['face_images'],-1,0)
-#    d_pts = pd.read_csv('facial_keypoints.csv')
-#    
-#    #Process Data_set
-#    data_set, truth_set = process_dataset(face_images, d_pts)
-#    
-#    #Get augmented data
-#    a_t, a_tr = homographical_augment(data_set, truth_set)
-#
-#    #Append augmented data
-#    x_set = np.concatenate((data_set, a_t), axis=0)
-#    y_set = np.concatenate((truth_set, a_tr), axis=0)
-#    
-#    #Split into training and test sets
-#    x_train, x_test, y_train, y_test = train_test_split(x_set, y_set, test_size=0.2, random_state=10)
-#    
-#    plot_results(x_train, y_train)
+    face_images = np.moveaxis(np.load('face_images.npz')['face_images'],-1,0)
+    d_pts = pd.read_csv('facial_keypoints.csv')
     
-    #split between training set and validation set    
-#    model = sourced_cnn()
-#    model.load_weights('ghetto_net_weights_use.h5')
-#    checkpoint = ModelCheckpoint('ghetto_net_weightsv4.h5', monitor='val_accuracy', save_best_only=True, save_weights_only=True, verbose=1)
-#    model.fit(x_train, y_train, batch_size=16, epochs=100, callbacks=[checkpoint], validation_split=0.17, verbose=1, shuffle=True)
-     
-#    predictions = model.predict(x_test)
+    #Process Data_set
+    data_set, truth_set = process_dataset(face_images, d_pts)
     
-    #Real portrait testing
-#    testing_data = load_dataset()
-#    predicted_testing = model.predict(testing_data)
-    #plot_results(x_test, predictions)
+    #Get augmented data
+    a_t, a_tr = homographical_augment(data_set, truth_set)
+
+    #Append augmented data
+    x_set = np.concatenate((data_set, a_t), axis=0)
+    y_set = np.concatenate((truth_set, a_tr), axis=0)
     
+    #Split into training and test sets and plot results
+    x_train, x_test, y_train, y_test = train_test_split(x_set, y_set, test_size=0.2, random_state=10)
+    plot_results(x_train, y_train)
     
+    #Checkpoints  
+    log_dir = "logs/"
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1, profile_batch=100000)
+    checkpoint = ModelCheckpoint('ghetto_net_weightsv3.h5', monitor='val_accuracy', save_best_only=True, save_weights_only=True, verbose=1)
+    
+    model = sourced_cnn()
+    #model.load_weights('ghetto_net_weights_use.h5')    
+    model.fit(x_train, y_train, batch_size=16, epochs=100, callbacks=[checkpoint, tensorboard], validation_split=0.14, verbose=1, shuffle=True)
+    
+    #Get Test Results and Plot
+    predictions = model.predict(x_test)
+    plot_results(x_test, predictions)
+    
+    #Testing Frame
     raw_image = cv2.imread('test_images/15.png')
     testing_frame = process_frame(raw_image)
-    
-    preds = model.predict(testing_frame)
-#    print(preds)
-    
+    preds = model.predict(testing_frame)    
     img_upscaled_dpts = scale_coordinates(preds[0], (96,96), (np.size(raw_image,0),np.size(raw_image,1)))
-#    print(img_upscaled_dpts)
-    
-#    image = np.reshape(x_test[1762], (96,96))
-#    coordinates = predictions[1762]
     nose = draw_nose(raw_image, img_upscaled_dpts, rgb=True)
     
     nose_rgb = cv2.cvtColor(nose, cv2.COLOR_BGR2RGB)
