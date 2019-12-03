@@ -180,7 +180,6 @@ else:
         frame_gray = cv2.equalizeHist(frame_gray)
         #-- Detect faces
         faces = face_cascade.detectMultiScale(frame_gray)
-        print(len(faces))
         #Load CNN and Weights
         
         remapped = []
@@ -210,7 +209,6 @@ else:
 
         frame = augmentFlowers(frame, FaceCoords=remapped)
         frame[:,:,0] = 120
-        out.write(frame)
         cv2.imshow("",frame)
         cv2.waitKey(delay=1)
         if cv2.waitKey(1) == ord('a'):
