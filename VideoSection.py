@@ -130,7 +130,7 @@ if not webCamMode:
     height = tmp.shape[0]
 
     fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-    out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 60, (width, height), True)
+    out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 30, (width, height), True)
 
     for frame in getImageFromVideo(INPUT_VIDEO):
         # Tint blue it's underwater
@@ -144,7 +144,6 @@ if not webCamMode:
         for (x,y,w,h) in faces:
             remapped.append(((x, y), (x + w, y+ h)))
 
-        for (x,y,w,h) in faces:
             #Segmented Slice
             segmented_face = frame[y:y+h, x:x+w, :]
 
@@ -171,28 +170,22 @@ if not webCamMode:
 else:
     cap = cv2.VideoCapture(0)
 
-    fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-    out = cv2.VideoWriter(OUTPUT_LOCATION, fourcc, 30, (width, height), True)
-
     while(True):
         ret, frame = cap.read()
         if frame is None:
             print("WEBCAM RETURNED NONE CHECK WEBCAM")
         # Tint blue
-        frame[:,:,0] = 120
 
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame_gray = cv2.equalizeHist(frame_gray)
         #-- Detect faces
         faces = face_cascade.detectMultiScale(frame_gray)
-        
+        print(len(faces))
         #Load CNN and Weights
         
         remapped = []
-        for (x,y,w,h) in faces:
-            remapped.append(((x, y), (x + w, y+ h)))
-
-        for (x,y,w,h) in faces:            
+        for (x,y,w,h) in faces:  
+            remapped.append(((x, y), (x + w, y+ h)))          
             #Segmented Slice
             segmented_face = frame[y:y+h, x:x+w, :]
 
@@ -216,10 +209,10 @@ else:
                 print("I can't believe you done this.")
 
         frame = augmentFlowers(frame, FaceCoords=remapped)
+        frame[:,:,0] = 120
         out.write(frame)
         cv2.imshow("",frame)
         cv2.waitKey(delay=1)
         if cv2.waitKey(1) == ord('a'):
             break
-    out.release()
 
