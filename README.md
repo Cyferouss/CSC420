@@ -18,8 +18,7 @@ Alternatively if you're using VS Code you can add something like the following t
     "C:/Users/skunk/Desktop/csc420proj/CSC420/output.avi",  
     "False"]  
 
-NOTE: ALL 3 OF THESE PARAMETERS ARE REQUIRED  
-NOTE: We used absolute file paths when testing.
+NOTE: ALL 3 OF THESE PARAMETERS ARE REQUIRED and we used absolute file paths when testing.
 ### Running Without Parameters
 Alternatively if you want you can manually edit the Configuration Files.  
 Load resources section of the code.  

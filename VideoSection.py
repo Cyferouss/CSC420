@@ -164,10 +164,15 @@ else:
             remapped.append(((x, y), (x + w, y+ h)))
 
         for (x,y,w,h) in faces:
-            cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
-        frame = augmentFlowers(frame, FaceCoords=remapped)
-        cv2.imshow("",frame)
-        cv2.waitKey(delay=1)
+            #cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 3)
+
+            # THIS PORTION IS THE FACE!
+            cv2.imshow("", frame[y:y+h, x:x+w, :])
+            cv2.waitKey(delay=1)
+
+        #frame = augmentFlowers(frame, FaceCoords=remapped)
+        #cv2.imshow("",frame)
+        #cv2.waitKey(delay=1)
         if cv2.waitKey(1) == ord('a'):
             break
 
